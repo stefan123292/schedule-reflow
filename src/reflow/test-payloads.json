@@ -1,0 +1,537 @@
+{
+  "_description": "Test payloads for POST /reflow endpoint - copy these into Swagger UI",
+
+  "1_basic_single_order": {
+    "_scenario": "Single work order, no dependencies - should schedule as-is",
+    "workOrders": [
+      {
+        "docId": "wo-001",
+        "data": {
+          "workOrderNumber": "WO-001",
+          "workCenterId": "machine-a",
+          "startDate": "2024-01-15T09:00:00.000Z",
+          "endDate": "2024-01-15T11:00:00.000Z",
+          "durationMinutes": 120,
+          "isMaintenance": false,
+          "dependsOnWorkOrderIds": []
+        }
+      }
+    ],
+    "workCenters": [
+      {
+        "docId": "machine-a",
+        "data": {
+          "name": "Machine A",
+          "shifts": [
+            { "dayOfWeek": 1, "startHour": 9, "endHour": 17 },
+            { "dayOfWeek": 2, "startHour": 9, "endHour": 17 },
+            { "dayOfWeek": 3, "startHour": 9, "endHour": 17 },
+            { "dayOfWeek": 4, "startHour": 9, "endHour": 17 },
+            { "dayOfWeek": 5, "startHour": 9, "endHour": 17 }
+          ],
+          "maintenanceWindows": []
+        }
+      }
+    ]
+  },
+
+  "2_shift_span": {
+    "_scenario": "Order starts at 4pm, needs 2hrs, shift ends 5pm - should span to next day 10am",
+    "workOrders": [
+      {
+        "docId": "wo-001",
+        "data": {
+          "workOrderNumber": "WO-001",
+          "workCenterId": "machine-a",
+          "startDate": "2024-01-15T16:00:00.000Z",
+          "endDate": "2024-01-15T18:00:00.000Z",
+          "durationMinutes": 120,
+          "isMaintenance": false,
+          "dependsOnWorkOrderIds": []
+        }
+      }
+    ],
+    "workCenters": [
+      {
+        "docId": "machine-a",
+        "data": {
+          "name": "Machine A",
+          "shifts": [
+            { "dayOfWeek": 1, "startHour": 9, "endHour": 17 },
+            { "dayOfWeek": 2, "startHour": 9, "endHour": 17 }
+          ],
+          "maintenanceWindows": []
+        }
+      }
+    ]
+  },
+
+  "3_dependency_cascade": {
+    "_scenario": "B depends on A - B should start after A ends (12pm), not at original 11am",
+    "workOrders": [
+      {
+        "docId": "wo-a",
+        "data": {
+          "workOrderNumber": "WO-A",
+          "workCenterId": "machine-a",
+          "startDate": "2024-01-15T10:00:00.000Z",
+          "endDate": "2024-01-15T12:00:00.000Z",
+          "durationMinutes": 120,
+          "isMaintenance": false,
+          "dependsOnWorkOrderIds": []
+        }
+      },
+      {
+        "docId": "wo-b",
+        "data": {
+          "workOrderNumber": "WO-B",
+          "workCenterId": "machine-a",
+          "startDate": "2024-01-15T11:00:00.000Z",
+          "endDate": "2024-01-15T12:00:00.000Z",
+          "durationMinutes": 60,
+          "isMaintenance": false,
+          "dependsOnWorkOrderIds": ["wo-a"]
+        }
+      }
+    ],
+    "workCenters": [
+      {
+        "docId": "machine-a",
+        "data": {
+          "name": "Machine A",
+          "shifts": [
+            { "dayOfWeek": 1, "startHour": 9, "endHour": 17 }
+          ],
+          "maintenanceWindows": []
+        }
+      }
+    ]
+  },
+
+  "4_multi_level_chain": {
+    "_scenario": "Chain A → B → C - all at same time, should sequence: 9-10, 10-11, 11-12",
+    "workOrders": [
+      {
+        "docId": "wo-a",
+        "data": {
+          "workOrderNumber": "WO-A",
+          "workCenterId": "machine-a",
+          "startDate": "2024-01-15T09:00:00.000Z",
+          "endDate": "2024-01-15T10:00:00.000Z",
+          "durationMinutes": 60,
+          "isMaintenance": false,
+          "dependsOnWorkOrderIds": []
+        }
+      },
+      {
+        "docId": "wo-b",
+        "data": {
+          "workOrderNumber": "WO-B",
+          "workCenterId": "machine-a",
+          "startDate": "2024-01-15T09:00:00.000Z",
+          "endDate": "2024-01-15T10:00:00.000Z",
+          "durationMinutes": 60,
+          "isMaintenance": false,
+          "dependsOnWorkOrderIds": ["wo-a"]
+        }
+      },
+      {
+        "docId": "wo-c",
+        "data": {
+          "workOrderNumber": "WO-C",
+          "workCenterId": "machine-a",
+          "startDate": "2024-01-15T09:00:00.000Z",
+          "endDate": "2024-01-15T10:00:00.000Z",
+          "durationMinutes": 60,
+          "isMaintenance": false,
+          "dependsOnWorkOrderIds": ["wo-b"]
+        }
+      }
+    ],
+    "workCenters": [
+      {
+        "docId": "machine-a",
+        "data": {
+          "name": "Machine A",
+          "shifts": [
+            { "dayOfWeek": 1, "startHour": 9, "endHour": 17 }
+          ],
+          "maintenanceWindows": []
+        }
+      }
+    ]
+  },
+
+  "5_cross_machine_dependency": {
+    "_scenario": "B on Machine 2 depends on A on Machine 1 - B waits for A even on different machine",
+    "workOrders": [
+      {
+        "docId": "wo-a",
+        "data": {
+          "workOrderNumber": "WO-A",
+          "workCenterId": "machine-1",
+          "startDate": "2024-01-15T09:00:00.000Z",
+          "endDate": "2024-01-15T11:00:00.000Z",
+          "durationMinutes": 120,
+          "isMaintenance": false,
+          "dependsOnWorkOrderIds": []
+        }
+      },
+      {
+        "docId": "wo-b",
+        "data": {
+          "workOrderNumber": "WO-B",
+          "workCenterId": "machine-2",
+          "startDate": "2024-01-15T09:00:00.000Z",
+          "endDate": "2024-01-15T10:00:00.000Z",
+          "durationMinutes": 60,
+          "isMaintenance": false,
+          "dependsOnWorkOrderIds": ["wo-a"]
+        }
+      }
+    ],
+    "workCenters": [
+      {
+        "docId": "machine-1",
+        "data": {
+          "name": "Machine 1",
+          "shifts": [{ "dayOfWeek": 1, "startHour": 9, "endHour": 17 }],
+          "maintenanceWindows": []
+        }
+      },
+      {
+        "docId": "machine-2",
+        "data": {
+          "name": "Machine 2",
+          "shifts": [{ "dayOfWeek": 1, "startHour": 9, "endHour": 17 }],
+          "maintenanceWindows": []
+        }
+      }
+    ]
+  },
+
+  "6_maintenance_fixed": {
+    "_scenario": "Maintenance order should stay fixed (isFixed: true, wasRescheduled: false)",
+    "workOrders": [
+      {
+        "docId": "wo-maint",
+        "data": {
+          "workOrderNumber": "MAINT-001",
+          "workCenterId": "machine-a",
+          "startDate": "2024-01-15T12:00:00.000Z",
+          "endDate": "2024-01-15T13:00:00.000Z",
+          "durationMinutes": 60,
+          "isMaintenance": true,
+          "dependsOnWorkOrderIds": []
+        }
+      }
+    ],
+    "workCenters": [
+      {
+        "docId": "machine-a",
+        "data": {
+          "name": "Machine A",
+          "shifts": [{ "dayOfWeek": 1, "startHour": 9, "endHour": 17 }],
+          "maintenanceWindows": []
+        }
+      }
+    ]
+  },
+
+  "7_maintenance_window_avoidance": {
+    "_scenario": "3hr work starts 10am, maintenance 11am-1pm - should end at 3pm (1hr + skip + 2hr)",
+    "workOrders": [
+      {
+        "docId": "wo-001",
+        "data": {
+          "workOrderNumber": "WO-001",
+          "workCenterId": "machine-a",
+          "startDate": "2024-01-15T10:00:00.000Z",
+          "endDate": "2024-01-15T13:00:00.000Z",
+          "durationMinutes": 180,
+          "isMaintenance": false,
+          "dependsOnWorkOrderIds": []
+        }
+      }
+    ],
+    "workCenters": [
+      {
+        "docId": "machine-a",
+        "data": {
+          "name": "Machine A",
+          "shifts": [{ "dayOfWeek": 1, "startHour": 9, "endHour": 17 }],
+          "maintenanceWindows": [
+            {
+              "startDate": "2024-01-15T11:00:00.000Z",
+              "endDate": "2024-01-15T13:00:00.000Z",
+              "reason": "Scheduled maintenance"
+            }
+          ]
+        }
+      }
+    ]
+  },
+
+  "8_no_overlap_same_machine": {
+    "_scenario": "Two orders same time same machine - one gets pushed to 10am",
+    "workOrders": [
+      {
+        "docId": "wo-001",
+        "data": {
+          "workOrderNumber": "WO-001",
+          "workCenterId": "machine-a",
+          "startDate": "2024-01-15T09:00:00.000Z",
+          "endDate": "2024-01-15T10:00:00.000Z",
+          "durationMinutes": 60,
+          "isMaintenance": false,
+          "dependsOnWorkOrderIds": []
+        }
+      },
+      {
+        "docId": "wo-002",
+        "data": {
+          "workOrderNumber": "WO-002",
+          "workCenterId": "machine-a",
+          "startDate": "2024-01-15T09:00:00.000Z",
+          "endDate": "2024-01-15T10:00:00.000Z",
+          "durationMinutes": 60,
+          "isMaintenance": false,
+          "dependsOnWorkOrderIds": []
+        }
+      }
+    ],
+    "workCenters": [
+      {
+        "docId": "machine-a",
+        "data": {
+          "name": "Machine A",
+          "shifts": [{ "dayOfWeek": 1, "startHour": 9, "endHour": 17 }],
+          "maintenanceWindows": []
+        }
+      }
+    ]
+  },
+
+  "9_parallel_different_machines": {
+    "_scenario": "Two orders same time different machines - both stay at 9am",
+    "workOrders": [
+      {
+        "docId": "wo-001",
+        "data": {
+          "workOrderNumber": "WO-001",
+          "workCenterId": "machine-1",
+          "startDate": "2024-01-15T09:00:00.000Z",
+          "endDate": "2024-01-15T10:00:00.000Z",
+          "durationMinutes": 60,
+          "isMaintenance": false,
+          "dependsOnWorkOrderIds": []
+        }
+      },
+      {
+        "docId": "wo-002",
+        "data": {
+          "workOrderNumber": "WO-002",
+          "workCenterId": "machine-2",
+          "startDate": "2024-01-15T09:00:00.000Z",
+          "endDate": "2024-01-15T10:00:00.000Z",
+          "durationMinutes": 60,
+          "isMaintenance": false,
+          "dependsOnWorkOrderIds": []
+        }
+      }
+    ],
+    "workCenters": [
+      {
+        "docId": "machine-1",
+        "data": {
+          "name": "Machine 1",
+          "shifts": [{ "dayOfWeek": 1, "startHour": 9, "endHour": 17 }],
+          "maintenanceWindows": []
+        }
+      },
+      {
+        "docId": "machine-2",
+        "data": {
+          "name": "Machine 2",
+          "shifts": [{ "dayOfWeek": 1, "startHour": 9, "endHour": 17 }],
+          "maintenanceWindows": []
+        }
+      }
+    ]
+  },
+
+  "10_circular_dependency_ERROR": {
+    "_scenario": "ERROR CASE: A→B→C→A circular - should return 400 error",
+    "workOrders": [
+      {
+        "docId": "wo-a",
+        "data": {
+          "workOrderNumber": "WO-A",
+          "workCenterId": "machine-a",
+          "startDate": "2024-01-15T09:00:00.000Z",
+          "endDate": "2024-01-15T10:00:00.000Z",
+          "durationMinutes": 60,
+          "isMaintenance": false,
+          "dependsOnWorkOrderIds": ["wo-c"]
+        }
+      },
+      {
+        "docId": "wo-b",
+        "data": {
+          "workOrderNumber": "WO-B",
+          "workCenterId": "machine-a",
+          "startDate": "2024-01-15T09:00:00.000Z",
+          "endDate": "2024-01-15T10:00:00.000Z",
+          "durationMinutes": 60,
+          "isMaintenance": false,
+          "dependsOnWorkOrderIds": ["wo-a"]
+        }
+      },
+      {
+        "docId": "wo-c",
+        "data": {
+          "workOrderNumber": "WO-C",
+          "workCenterId": "machine-a",
+          "startDate": "2024-01-15T09:00:00.000Z",
+          "endDate": "2024-01-15T10:00:00.000Z",
+          "durationMinutes": 60,
+          "isMaintenance": false,
+          "dependsOnWorkOrderIds": ["wo-b"]
+        }
+      }
+    ],
+    "workCenters": [
+      {
+        "docId": "machine-a",
+        "data": {
+          "name": "Machine A",
+          "shifts": [{ "dayOfWeek": 1, "startHour": 9, "endHour": 17 }],
+          "maintenanceWindows": []
+        }
+      }
+    ]
+  },
+
+  "11_missing_dependency_ERROR": {
+    "_scenario": "ERROR CASE: Depends on non-existent order - should return 400 error",
+    "workOrders": [
+      {
+        "docId": "wo-a",
+        "data": {
+          "workOrderNumber": "WO-A",
+          "workCenterId": "machine-a",
+          "startDate": "2024-01-15T09:00:00.000Z",
+          "endDate": "2024-01-15T10:00:00.000Z",
+          "durationMinutes": 60,
+          "isMaintenance": false,
+          "dependsOnWorkOrderIds": ["wo-nonexistent"]
+        }
+      }
+    ],
+    "workCenters": [
+      {
+        "docId": "machine-a",
+        "data": {
+          "name": "Machine A",
+          "shifts": [{ "dayOfWeek": 1, "startHour": 9, "endHour": 17 }],
+          "maintenanceWindows": []
+        }
+      }
+    ]
+  },
+
+  "12_outside_shift_hours": {
+    "_scenario": "Order on Saturday (no shifts) - should move to Monday 9am",
+    "workOrders": [
+      {
+        "docId": "wo-001",
+        "data": {
+          "workOrderNumber": "WO-001",
+          "workCenterId": "machine-a",
+          "startDate": "2024-01-13T10:00:00.000Z",
+          "endDate": "2024-01-13T11:00:00.000Z",
+          "durationMinutes": 60,
+          "isMaintenance": false,
+          "dependsOnWorkOrderIds": []
+        }
+      }
+    ],
+    "workCenters": [
+      {
+        "docId": "machine-a",
+        "data": {
+          "name": "Machine A",
+          "shifts": [
+            { "dayOfWeek": 1, "startHour": 9, "endHour": 17 }
+          ],
+          "maintenanceWindows": []
+        }
+      }
+    ]
+  },
+
+  "13_diamond_dependency": {
+    "_scenario": "Diamond: A→B, A→C, B→D, C→D - D waits for both B and C",
+    "workOrders": [
+      {
+        "docId": "wo-a",
+        "data": {
+          "workOrderNumber": "WO-A",
+          "workCenterId": "machine-a",
+          "startDate": "2024-01-15T09:00:00.000Z",
+          "endDate": "2024-01-15T10:00:00.000Z",
+          "durationMinutes": 60,
+          "isMaintenance": false,
+          "dependsOnWorkOrderIds": []
+        }
+      },
+      {
+        "docId": "wo-b",
+        "data": {
+          "workOrderNumber": "WO-B",
+          "workCenterId": "machine-a",
+          "startDate": "2024-01-15T09:00:00.000Z",
+          "endDate": "2024-01-15T10:00:00.000Z",
+          "durationMinutes": 60,
+          "isMaintenance": false,
+          "dependsOnWorkOrderIds": ["wo-a"]
+        }
+      },
+      {
+        "docId": "wo-c",
+        "data": {
+          "workOrderNumber": "WO-C",
+          "workCenterId": "machine-a",
+          "startDate": "2024-01-15T09:00:00.000Z",
+          "endDate": "2024-01-15T10:00:00.000Z",
+          "durationMinutes": 60,
+          "isMaintenance": false,
+          "dependsOnWorkOrderIds": ["wo-a"]
+        }
+      },
+      {
+        "docId": "wo-d",
+        "data": {
+          "workOrderNumber": "WO-D",
+          "workCenterId": "machine-a",
+          "startDate": "2024-01-15T09:00:00.000Z",
+          "endDate": "2024-01-15T10:00:00.000Z",
+          "durationMinutes": 60,
+          "isMaintenance": false,
+          "dependsOnWorkOrderIds": ["wo-b", "wo-c"]
+        }
+      }
+    ],
+    "workCenters": [
+      {
+        "docId": "machine-a",
+        "data": {
+          "name": "Machine A",
+          "shifts": [{ "dayOfWeek": 1, "startHour": 9, "endHour": 17 }],
+          "maintenanceWindows": []
+        }
+      }
+    ]
+  }
+}
+
